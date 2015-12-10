@@ -1,4 +1,4 @@
-# dependent_state_city
+# dependent_state_city for drupal 7
 
 Its provide Dependent Drop down feature for existing fields.
 
