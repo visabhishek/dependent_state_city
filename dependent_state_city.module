@@ -1,0 +1,196 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function dependent_state_city_menu() {
+  $items = array();
+  $items['admin/config/dsc/settings/countries'] = array(
+    'title' => 'Countries and states',
+    'description' => 'Manage available countries and configure states.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dsc_country_import_form'),
+    'access arguments' => array('access content'),
+    'file' => 'dsc_countries.inc',
+  );
+  return $items;
+}
+
+/**
+ * Returns an array of country files that can be installed or updated.
+ */
+function _dsc_country_import_list() {
+  $dir = drupal_get_path('module', 'dependent_state_city') . '/countries/';
+
+  $countries = array();
+  if (is_dir($dir)) {
+    if ($dh = opendir($dir)) {
+      while (($file = readdir($dh)) !== FALSE) {
+        switch (filetype($dir . $file)) {
+          case 'file':
+            if (substr($file, -4, 4) == '.cif') {
+              $pieces = explode('_', substr($file, 0, strlen($file) - 4));
+              $country_id = intval($pieces[count($pieces) - 2]);
+              $version = $pieces[count($pieces) - 1];
+
+              if (!isset($countries[$country_id])) {
+                $countries[$country_id]['version'] = $version;
+                $countries[$country_id]['file'] = $file;
+              }
+              else {
+                if ($version > $countries[$country_id]['version']) {
+                  $countries[$country_id]['version'] = $version;
+                  $countries[$country_id]['file'] = $file;
+                }
+              }
+            }
+            break;
+        }
+      }
+      closedir($dh);
+    }
+  }
+
+  return $countries;
+}
+
+/**
+ * 
+ * @param type $form
+ * @param type $form_state
+ * @param type $form_id
+ */
+function dependent_state_city_form_alter(&$form, $form_state, $form_id) {
+
+  if ($form_id == 'article_node_form') {
+
+$country_default_value = isset($form_state['values']['field_cmn_country']['und']['0']['value']) ? $form_state['values']['field_cmn_country']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_country['und'][0]['value'] : 356);
+
+      $state_default_value = isset($form_state['values']['field_cmn_state']['und']['0']['value']) ? $form_state['values']['field_cmn_state']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_state['und'][0]['value'] : 'AP');
+      $city_default_value = isset($form_state['values']['field_cmn_city']['und']['0']['value']) ? $form_state['values']['field_cmn_city']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_city['und'][0]['value'] : 1);
+
+    $country_options = _get_location('country');
+    $selected_country = $country_default_value;
+    $form['field_cmn_country']['und']['#options'] = $country_options;
+    $form['field_cmn_country']['und']['#default_value'] = $selected_country;
+
+    $form['field_cmn_country']['und']['#ajax'] = array(
+      'event' => 'change',
+      'callback' => 'field_cmn_country_callback',
+      'wrapper' => 'field_cmn_state_replace',
+      'method' => 'replace',
+    );
+
+    $state_options = _get_location('state', $selected_country); // get state
+    $selected_state = $state_default_value;
+
+    $form['field_cmn_state']['und']['#prefix'] = '<div id="field_cmn_state_replace">';
+    $form['field_cmn_state']['und']['#suffix'] = '</div>';
+    $form['field_cmn_state']['und']['#options'] = $state_options;
+    $form['field_cmn_state']['und']['#default_value'] = $selected_state;
+
+    $form['field_cmn_state']['und']['#ajax'] = array(
+      'event' => 'change',
+      'callback' => 'field_cmn_state_callback',
+      'wrapper' => 'field_cmn_city_replace',
+      'method' => 'replace',
+    );
+
+    $city_options = _get_location('city', $selected_country, $selected_state);
+    $form['field_cmn_city']['und']['#prefix'] = '<div id="field_cmn_city_replace">';
+    $form['field_cmn_city']['und']['#suffix'] = '</div>';
+    $form['field_cmn_city']['und']['#options'] = $city_options;
+    $form['field_cmn_city']['und']['#default_value'] = $city_default_value;
+  }
+}
+
+/**
+ * 
+ * @param type $type
+ * @param type $location_id
+ * @param type $country_id
+ * @return type
+ */
+function _get_location($type, $country_id = NULL, $location_id = NULL) {
+  switch ($type) {
+    case 'country':
+      $country_options = load_data($type);
+      return $country_options;
+      break;
+
+    case 'state':
+      $state_options = load_data($type, $country_id);
+      return $state_options;
+      break;
+
+    case 'city':
+      $city_options = load_data($type, $country_id, $location_id);
+      return $city_options;
+      break;
+  }
+}
+
+function load_data($type, $country_id = NULL, $location_id = NULL) {
+
+  switch ($type) {
+
+    case 'country':
+      $options = array();
+      $query = db_select('dsc_countries', 'dscc');
+      $query->fields('dscc', array('country_id', 'country_name'));
+      $query->orderBy('dscc.country_name', 'ASC');
+      $res = $query->execute()->fetchall();
+      foreach ($res as $values) {
+        $options[$values->country_id] = $values->country_name;
+      }
+      break;
+
+    case 'state':
+      $options = array();
+      $query = db_select('dsc_zones', 'dscs');
+      $query->fields('dscs', array('zone_code', 'zone_name'));
+      $query->condition('dscs.zone_country_id', $country_id, '=');
+      $query->orderBy('dscs.zone_name', 'ASC');
+      $res = $query->execute()->fetchall();
+      foreach ($res as $values) {
+        $options[$values->zone_code] = $values->zone_name;
+      }
+      break;
+
+    case 'city':
+      $options = array();
+      $query = db_select('dsc_city', 'dc');
+      $query->fields('dc', array('city_key', 'city_value'));
+      $query->condition('dc.city_zone_id', $location_id, '=');
+      $query->orderBy('dc.city_value', 'ASC');
+      $res = $query->execute()->fetchall();
+      foreach ($res as $values) {
+        $options[$values->city_key] = $values->city_value;
+      }
+      break;
+  }
+
+  if (empty($options)) {
+    $options[''] = 'Please Select';
+  }
+  return $options;
+}
+
+// ajax country callback
+function field_cmn_country_callback($form, $form_state) {
+  $form_field_state = $form['field_cmn_state'];
+  $form_field_city = $form['field_cmn_city'];
+
+  return array(
+    '#type' => 'ajax',
+    '#commands' => array(
+      ajax_command_replace("#field_cmn_state_replace", render($form_field_state)),
+      ajax_command_replace("#field_cmn_city_replace", render($form_field_city))
+    )
+  );
+}
+
+//ajax state callback
+function field_cmn_state_callback($form, $form_state) {
+  return $form['field_cmn_city'];
+}

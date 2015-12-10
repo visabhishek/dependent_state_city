@@ -1,0 +1,10 @@
+name = dependent_state_city
+description = Dependent State City
+core = 7.x
+package = custom
+php = 5.3
+version = 7.1
+
+dependencies[] = field
+configure = admin/config/dsc/settings/countries
+
