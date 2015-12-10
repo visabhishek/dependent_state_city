@@ -64,10 +64,10 @@ function dependent_state_city_form_alter(&$form, $form_state, $form_id) {
 
   if ($form_id == 'article_node_form') {
 
-$country_default_value = isset($form_state['values']['field_cmn_country']['und']['0']['value']) ? $form_state['values']['field_cmn_country']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_country['und'][0]['value'] : 356);
+    $country_default_value = isset($form_state['values']['field_cmn_country']['und']['0']['value']) ? $form_state['values']['field_cmn_country']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_country['und'][0]['value'] : 356);
 
-      $state_default_value = isset($form_state['values']['field_cmn_state']['und']['0']['value']) ? $form_state['values']['field_cmn_state']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_state['und'][0]['value'] : 'AP');
-      $city_default_value = isset($form_state['values']['field_cmn_city']['und']['0']['value']) ? $form_state['values']['field_cmn_city']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_city['und'][0]['value'] : 1);
+    $state_default_value = isset($form_state['values']['field_cmn_state']['und']['0']['value']) ? $form_state['values']['field_cmn_state']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_state['und'][0]['value'] : 'AP');
+    $city_default_value = isset($form_state['values']['field_cmn_city']['und']['0']['value']) ? $form_state['values']['field_cmn_city']['und']['0']['value'] : ($form['nid']['#value'] ? $form['#node']->field_cmn_city['und'][0]['value'] : 1);
 
     $country_options = _get_location('country');
     $selected_country = $country_default_value;

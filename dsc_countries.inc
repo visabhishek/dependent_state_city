@@ -12,7 +12,7 @@
  * @ingroup forms
  */
 function dsc_country_import_form($form, &$form_state) {
-  
+
   $countries = array();
   $result = db_query("SELECT * FROM {dsc_countries}");
   foreach ($result as $country) {
