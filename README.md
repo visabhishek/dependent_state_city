@@ -23,5 +23,7 @@ Its provide Dependent Drop down feature for existing fields.
 
 #todo
 1: Make content type configrable
+
 2: Make field configrable
+
 3: Add City data for other country also.
