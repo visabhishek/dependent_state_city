@@ -130,6 +130,13 @@ function _get_location($type, $country_id = NULL, $location_id = NULL) {
   }
 }
 
+/**
+ * 
+ * @param type $type
+ * @param type $country_id
+ * @param type $location_id
+ * @return string
+ */
 function load_data($type, $country_id = NULL, $location_id = NULL) {
 
   switch ($type) {
@@ -193,4 +200,84 @@ function field_cmn_country_callback($form, $form_state) {
 //ajax state callback
 function field_cmn_state_callback($form, $form_state) {
   return $form['field_cmn_city'];
+}
+
+/**
+ * 
+ * @param type $type
+ * @param type $country_id
+ * @param type $location_id
+ * @return string
+ */
+function set_data($type, $country_id = NULL, $location_id = NULL, $city_id = NULL) {
+
+  switch ($type) {
+
+    case 'country':
+      $options = array();
+      $query = db_select('dsc_countries', 'dscc');
+      $query->fields('dscc', array('country_name'));
+      $query->condition('dscc.country_id', $country_id, '=');
+      $res = $query->execute()->fetchall();
+      foreach ($res as $values) {
+        $options = $values->country_name;
+      }
+      break;
+
+    case 'state':
+      $options = array();
+      $query = db_select('dsc_zones', 'dscs');
+      $query->fields('dscs', array('zone_name'));
+      $query->condition('dscs.zone_country_id', $country_id, '=');
+      $query->condition('dscs.zone_code', $location_id, '=');
+      $res = $query->execute()->fetchall();
+      foreach ($res as $values) {
+        $options = $values->zone_name;
+      }
+      break;
+
+    case 'city':
+      $options = array();
+      $query = db_select('dsc_city', 'dc');
+      $query->fields('dc', array('city_key', 'city_value'));
+      $query->condition('dc.city_zone_id', $location_id, '=');
+      $query->condition('dc.city_key', $city_id, '=');
+      $res = $query->execute()->fetchall();
+      foreach ($res as $values) {
+        $options = $values->city_value;
+      }
+      break;
+  }
+
+  return $options;
+}
+
+/**
+ * 
+ * @param string $variables
+ * @param type $hook
+ */
+function dependent_state_city_preprocess_field(&$variables, $hook) {
+  if ($node = menu_get_object()) {
+    if ($node->type == 'article') {
+      $country_id = $variables['element']['#object']->field_cmn_country['und'][0]['value'];
+      $location_id = $variables['element']['#object']->field_cmn_state['und'][0]['value'];
+      $city_id = $variables['element']['#object']->field_cmn_city['und'][0]['value'];
+
+      if($variables['element']['#field_name'] == 'field_cmn_country') {
+        $country_value = set_data('country', $country_id);
+        $variables['items'][0]['#markup'] = $country_value;
+      }
+      
+      if($variables['element']['#field_name'] == 'field_cmn_state') {
+        $state_value = set_data('state', $country_id, $location_id);
+        $variables['items'][0]['#markup'] = $state_value;
+      }
+      
+      if($variables['element']['#field_name'] == 'field_cmn_city') {
+        $city_value = set_data('city', $country_id, $location_id, $city_id);
+        $variables['items'][0]['#markup'] = $city_value;
+      }
+    }
+  }
 }
