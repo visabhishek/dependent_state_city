@@ -13,8 +13,11 @@ Its provide Dependent Drop down feature for existing fields.
 1: Right now Content type is fixed as " Article"
 
 2: Fields Name is Fixed as dropdown with any value and allowd list
+
   1: field_cmn_country
+  
   2: field_cmn_state
+  
   3: field_city
 
 
